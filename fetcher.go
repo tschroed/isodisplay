@@ -68,5 +68,5 @@ func NewEmissionsFetcher() *httpFetcher {
 	url := func(f *httpFetcher) string {
 		return emissionsURL(f.now())
 	}
-	return newHTTPFetcher(url, time.Now, http.Get, 5*time.Minute)
+	return newHTTPFetcher(url, time.Now, http.Get, 15*time.Minute)
 }
