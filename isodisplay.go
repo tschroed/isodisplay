@@ -13,11 +13,11 @@ type Signal struct {
 }
 
 type Source interface {
-	Output() chan<- Signal
+	Output() <-chan Signal
 	Close() error
 }
 
 type Sink interface {
-	Input() <-chan Signal
+	Input() chan<- Signal
 	Close() error
 }
