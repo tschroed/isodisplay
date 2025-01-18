@@ -9,7 +9,7 @@ import (
 )
 
 type Fetcher interface {
-	RawData() (string, error)
+	RawData() ([]byte, error)
 }
 
 type httpFetcher struct {
@@ -17,7 +17,7 @@ type httpFetcher struct {
 	now    func() time.Time
 	get    func(string) (*http.Response, error)
 	ttl    time.Duration
-	cache  string
+	cache  []byte
 	expiry time.Time
 }
 
@@ -34,7 +34,7 @@ func (f *httpFetcher) FlushCache() {
 	f.expiry = time.UnixMicro(0)
 }
 
-func (f *httpFetcher) RawData() (string, error) {
+func (f *httpFetcher) RawData() ([]byte, error) {
 	now := f.now()
 	if now.UnixNano() > f.expiry.UnixNano() {
 		url := f.url(f)
@@ -43,24 +43,24 @@ func (f *httpFetcher) RawData() (string, error) {
 		if err != nil {
 			msg := fmt.Errorf("Error fetching %s: %w", url, err)
 			log.Printf("%v", msg)
-			return "", msg
+			return nil, msg
 		}
 		if resp == nil {
 			msg := fmt.Errorf("Got nil response")
 			log.Printf("%v", msg)
-			return "", msg
+			return nil, msg
 		}
 		defer resp.Body.Close()
 		log.Printf("Response %d bytes (code: %d)", resp.ContentLength, resp.StatusCode)
 		if resp.StatusCode != 200 {
-			return "", fmt.Errorf("Unexpected response fetching %s: %s (%d)", url, resp.Status, resp.StatusCode)
+			return nil, fmt.Errorf("Unexpected response fetching %s: %s (%d)", url, resp.Status, resp.StatusCode)
 		}
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return "", fmt.Errorf("Error reading body %s: %w", url, err)
+			return nil, fmt.Errorf("Error reading body %s: %w", url, err)
 		}
 		log.Printf("Read %d bytes", len(b))
-		f.cache = string(b)
+		f.cache = b
 		f.expiry = f.now().Add(f.ttl)
 	}
 	return f.cache, nil

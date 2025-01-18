@@ -69,29 +69,29 @@ func TestHTTPFetcher(t *testing.T) {
 	f := newHTTPFetcher(url, now, get, 5*time.Minute)
 	// Normal fetch
 	d, err := f.RawData()
-	log.Printf("Got raw data: %v", d)
+	log.Printf("Got raw data: %v", string(d))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if d != expected {
+	if string(d) != expected {
 		t.Errorf("Unexpected data, got \"%s\", expected \"%s\"", d, expected)
 	}
 	d, err = f.RawData()
 
 	// Set error mode, but cache should mask it
 	mode = ERR_500
-	log.Printf("Got raw data: %v", d)
+	log.Printf("Got raw data: %v", string(d))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if d != expected {
+	if string(d) != expected {
 		t.Errorf("Unexpected data, got \"%s\", expected \"%s\"", d, expected)
 	}
 
 	// Now expire the cache, so new fetch should propagate 500
 	n += 60000000 * 6 // Cache is expired 6 minutes later
 	d, err = f.RawData()
-	log.Printf("Got raw data: %v", d)
+	log.Printf("Got raw data: %v", string(d))
 	if err == nil {
 		t.Errorf("Expected error, received none")
 	}
@@ -100,7 +100,7 @@ func TestHTTPFetcher(t *testing.T) {
 	mode = ERR_FETCH
 	n += 60000000 * 6 // Cache is expired 6 minutes later
 	d, err = f.RawData()
-	log.Printf("Got raw data: %v", d)
+	log.Printf("Got raw data: %v", string(d))
 	if err == nil {
 		t.Errorf("Expected error, received none")
 	}
@@ -109,7 +109,7 @@ func TestHTTPFetcher(t *testing.T) {
 	mode = ERR_NIL
 	n += 60000000 * 6 // Cache is expired 6 minutes later
 	d, err = f.RawData()
-	log.Printf("Got raw data: %v", d)
+	log.Printf("Got raw data: %v", string(d))
 	if err == nil {
 		t.Errorf("Expected error, received none")
 	}
@@ -118,11 +118,11 @@ func TestHTTPFetcher(t *testing.T) {
 	mode = OK_ALT
 	f.FlushCache()
 	d, err = f.RawData()
-	log.Printf("Got raw data: %v", d)
+	log.Printf("Got raw data: %v", string(d))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if d != expected2 {
+	if string(d) != expected2 {
 		t.Errorf("Unexpected data, got \"%s\", expected \"%s\"", d, expected)
 	}
 }

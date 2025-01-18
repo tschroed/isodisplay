@@ -32,8 +32,8 @@ func newStdoutSink(out io.Writer) *StdoutSink {
 			select {
 			case sig, more := <-s.ch:
 				if !more {
-					log.Print("Signal channel closed, exiting Sink loop.")
 					s.done <- true
+					log.Print("Signal channel closed, exiting Sink loop.")
 					return
 				}
 				fmt.Fprintf(s.out, "[%v] Received Signal: %v\n", time.Now(), sig)
@@ -41,8 +41,8 @@ func newStdoutSink(out io.Writer) *StdoutSink {
 		}
 	}
 	s := &StdoutSink{
-		ch:   make(chan Signal),
-		done: make(chan bool),
+		ch:   make(chan Signal, 10),
+		done: make(chan bool, 1),
 		out:  out,
 	}
 	go p(s)
