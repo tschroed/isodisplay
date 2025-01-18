@@ -90,7 +90,7 @@ func newEmissionsSource(f Fetcher, interval time.Duration) *EmissionsSource {
 				}
 				s.ch <- Signal{
 					Name: "TotalEmissions",
-					// Right now 0 - 100T/min is a pretty good scale so just grab the raw value directl.
+					// Right now 0 - 100T/min is a pretty good scale so just grab the raw value directly.
 					RelativeValue: int8(e[len(e)-1].Total),
 					RawValue:      e[len(e)-1].Total,
 					RawUnit:       "Metric Tons/min",
