@@ -30,6 +30,10 @@ func newHTTPFetcher(url func(*httpFetcher) string, now func() time.Time, get fun
 	}
 }
 
+func (f *httpFetcher) FlushCache() {
+	f.expiry = time.UnixMicro(0)
+}
+
 func (f *httpFetcher) RawData() (string, error) {
 	now := f.now()
 	if now.UnixNano() > f.expiry.UnixNano() {
@@ -37,10 +41,14 @@ func (f *httpFetcher) RawData() (string, error) {
 		log.Printf("Fetching %s", url)
 		resp, err := f.get(url)
 		if err != nil {
-			return "", fmt.Errorf("Error fetching %s: %w", url, err)
+			msg := fmt.Errorf("Error fetching %s: %w", url, err)
+			log.Printf("%v", msg)
+			return "", msg
 		}
 		if resp == nil {
-			return "", fmt.Errorf("Got nil response")
+			msg := fmt.Errorf("Got nil response")
+			log.Printf("%v", msg)
+			return "", msg
 		}
 		defer resp.Body.Close()
 		log.Printf("Response %d bytes (code: %d)", resp.ContentLength, resp.StatusCode)
