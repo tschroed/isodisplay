@@ -1,21 +1,32 @@
 package main
 
-// TODO(trevors): Flags for different sinks.
 import (
+	"flag"
 	"log"
 
 	"github.com/tschroed/isodisplay"
 	"github.com/tschroed/trafficlight/lcus"
 )
 
+var dFlag = flag.String("d", "lcus", "Driver to use (stdout or lcus)")
+
 func main() {
+	flag.Parse()
 	log.Print("Setting up sources and sinks...")
-	tl, err := lcus.New("/dev/ttyUSB0")
-	if err != nil {
-		panic(err)
-	}
 	src := isodisplay.NewEmissionsSource()
-	snk := isodisplay.NewTrafficLightSink(tl)
+	var snk isodisplay.Sink
+	switch *dFlag {
+	case "lcus":
+		tl, err := lcus.New("/dev/ttyUSB0")
+		if err != nil {
+			panic(err)
+		}
+		snk = isodisplay.NewTrafficLightSink(tl)
+	case "stdout":
+		snk = isodisplay.NewStdoutSink()
+	default:
+		panic("Unknown driver: " + *dFlag)
+	}
 	log.Print("Starting event loop.")
 	for {
 		sig := <-src.Output()
