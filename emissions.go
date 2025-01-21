@@ -83,10 +83,17 @@ func newEmissionsSource(f Fetcher, interval time.Duration) *EmissionsSource {
 				r, err := f.RawData()
 				if err != nil {
 					log.Printf("Error fetching data: %v", err)
+					continue
 				}
 				e, err := parseEmissionsData(r)
 				if err != nil {
 					log.Printf("Error parsing data: %v", err)
+					continue
+				}
+				if len(e) < 1 {
+					log.Printf("Emissions data short! %v", e)
+					log.Printf("Raw data: %v", string(r))
+					continue
 				}
 				s.ch <- Signal{
 					Name: "TotalEmissions",

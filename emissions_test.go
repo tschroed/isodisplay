@@ -78,9 +78,10 @@ func Test_newEmissionsSource(t *testing.T) {
 	}
 }
 
-func fetcherAndServerForTest() (Fetcher, *httptest.Server) {
+func fetcherAndServerForTest(fetched chan bool, data string) (Fetcher, *httptest.Server) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, emissionsData)
+		fmt.Fprintf(w, data)
+		fetched <- true
 	}))
 	url := func(*httpFetcher) string {
 		return s.URL
@@ -93,7 +94,7 @@ func fetcherAndServerForTest() (Fetcher, *httptest.Server) {
 }
 
 func TestEmissionsSource(t *testing.T) {
-	ftch, srvr := fetcherAndServerForTest()
+	ftch, srvr := fetcherAndServerForTest(make(chan bool, 10), emissionsData)
 	defer srvr.Close()
 	s := newEmissionsSource(ftch, 1*time.Second)
 	if s == nil {
@@ -101,5 +102,17 @@ func TestEmissionsSource(t *testing.T) {
 	}
 	sig := <-s.Output()
 	log.Printf("Signal: %v", sig)
+	s.Close()
+}
+
+func TestEmissionsSourceShortData(t *testing.T) {
+	fetched := make(chan bool, 1)
+	ftch, srvr := fetcherAndServerForTest(fetched, `[{"data":[]}]`)
+	defer srvr.Close()
+	s := newEmissionsSource(ftch, 1*time.Second)
+	if s == nil {
+		t.Errorf("nil EmissionsSource)}")
+	}
+	<-fetched
 	s.Close()
 }
