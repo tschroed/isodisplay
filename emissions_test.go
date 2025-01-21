@@ -116,3 +116,22 @@ func TestEmissionsSourceShortData(t *testing.T) {
 	<-fetched
 	s.Close()
 }
+
+func TestEmissionsSourceOverflow(t *testing.T) {
+	fetched := make(chan bool, 1)
+	// Total is the only interesting number here.
+	ftch, srvr := fetcherAndServerForTest(fetched, `[{"data":[
+		{"NaturalGas":29.16,"Oil":100.24,"Wood":6.4,"Total":144.62,"Refuse":8.47,"LandfillGas":0.35,"BeginDateMs":1737198711000,"BeginDate":"2025-01-18T06:11:51.000-05:00"}
+	]}]`)
+	defer srvr.Close()
+	s := newEmissionsSource(ftch, 1*time.Second)
+	if s == nil {
+		t.Errorf("nil EmissionsSource)}")
+	}
+	<-fetched
+	sig := <-s.Output()
+	if sig.RelativeValue != 100 {
+		t.Errorf("Unexpected value, want 100, got %v", sig.RelativeValue)
+	}
+	s.Close()
+}
