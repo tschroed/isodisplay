@@ -1,6 +1,7 @@
 package isodisplay
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -133,5 +134,56 @@ func TestEmissionsSourceOverflow(t *testing.T) {
 	if sig.RelativeValue != 100 {
 		t.Errorf("Unexpected value, want 100, got %v", sig.RelativeValue)
 	}
+	s.Close()
+}
+
+func TestEmissionsSourceDataParsingError(t *testing.T) {
+	fetched := make(chan bool, 1)
+	ftch, srvr := fetcherAndServerForTest(fetched, `invalid json`)
+	defer srvr.Close()
+	s := newEmissionsSource(ftch, 1*time.Second)
+	if s == nil {
+		t.Errorf("nil EmissionsSource")
+	}
+	<-fetched
+	select {
+	case sig := <-s.Output():
+		t.Errorf("Unexpected signal: %v", sig)
+	case <-time.After(2 * time.Second):
+		// No signal expected due to parsing error
+	}
+	s.Close()
+}
+
+type mockFetcher struct {
+	fetched chan bool
+}
+
+func (m *mockFetcher) RawData() ([]byte, error) {
+	m.fetched <- true
+	return nil, errors.New("mock error")
+}
+
+func TestEmissionsSourceRawDataError(t *testing.T) {
+	ftch := &mockFetcher{
+		fetched: make(chan bool, 1),
+	}
+	s := newEmissionsSource(ftch, 10*time.Millisecond)
+	if s == nil {
+		t.Errorf("nil EmissionsSource")
+	}
+	// Wait for *2* fetches, so there has been at least one error processed.
+	<-ftch.fetched
+	<-ftch.fetched
+
+	// Check if the source is still running
+	select {
+	case <-s.done:
+		t.Errorf("Source loop exited prematurely")
+	case <-s.ch:
+		t.Errorf("Unexpected signal received on bad RawData()")
+	default:
+	}
+
 	s.Close()
 }
